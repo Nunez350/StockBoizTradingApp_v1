@@ -1,0 +1,11 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - Parsing",
+            "request": "launch",
+            "mainClass": "Parsing",
+            "projectName": "react-docs_e8aac60b"
+        }
+    ]
+}
