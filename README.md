@@ -103,5 +103,17 @@ Suggested cron (ET): `15 8 * * 1-5 quantlab live run` and `0 10 * * 1-5 quantlab
 | LightGBM on 14 features, purged walk-forward, weekly | 0.53 | 0.03 | fold IC 0.014, 66% of folds > 0; shuffled-label IC -0.001 (t = -0.96) |
 | same model, 15-split CPCV (5 paths) | | 0.11-0.20 | mean 0.15, sd 0.04; trained on more data than walk-forward, so optimistic |
 
+Robustness on the 5-day reversal strategy (`reports/logs/robustness_meanrev.log`):
+
+- Permutation test (200 within-date shuffles through the full pipeline): p = 0.005. Note the null
+  carries the same 130% turnover and costs, so its mean Sharpe is -1.9; the test shows the signal
+  beats random, not that it beats zero after costs (the bootstrap CI answers that: it includes 0).
+- Lookahead canary: peeking one day ahead moves Sharpe from +0.20 to -3.5 (a reversal signal flips
+  sign when it sees tomorrow's return), so the honest run is not using future information.
+- Rebalance-day offsets: Sharpe by decision weekday = Fri +0.20, Mon -0.16, Tue -0.04, Wed +0.23,
+  Thu +0.20. The result depends on the weekday. Treat the headline Sharpe as fragile.
+- Parameter grid (feature x max position, 6 cells, all registered as trials): 0.18-0.20; the position
+  cap never binds with ~500 names.
+
 These are the honest numbers the framework was built to produce. See the tearsheets for the
 full inference (PSR, DSR, bootstrap CI, permutation p) before drawing conclusions.
