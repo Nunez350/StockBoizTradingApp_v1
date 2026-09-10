@@ -44,7 +44,8 @@ def build_dataset(panel: Panel, features: dict[str, pd.DataFrame], names: list[s
     y = y_wide.stack(future_stack=True).rename("y")
     y.index.names = ["date", "symbol"]
     df = X.join(y, how="inner").dropna(subset=["y"])
-    df = df[df[names].notna().sum(axis=1) >= max(3, len(names) // 2)]  # drop rows with mostly-missing features
+    thr = max(1, min(len(names), len(names) // 2))
+    df = df[df[names].notna().sum(axis=1) >= thr]  # drop rows with mostly-missing features
     t0 = df.index.get_level_values("date")
     pos = sess.get_indexer(t0) + 1 + horizon
     pos = np.minimum(pos, len(sess) - 1)

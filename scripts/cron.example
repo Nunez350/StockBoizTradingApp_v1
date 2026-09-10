@@ -1,0 +1,6 @@
+# Paper-trading schedule (America/New_York). Install with: crontab -e
+CRON_TZ=America/New_York
+PYTHONUNBUFFERED=1
+15 8  * * 1-5  cd /mnt/main_workspace/stocks && uv run quantlab live run      >> reports/logs/live_run.log 2>&1
+0  10 * * 1-5  cd /mnt/main_workspace/stocks && uv run quantlab live post-trade >> reports/logs/live_post.log 2>&1
+# Kill switch: `touch data/KILL` stops the job until the file is removed.
