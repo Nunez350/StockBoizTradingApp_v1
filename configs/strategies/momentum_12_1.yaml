@@ -1,0 +1,6 @@
+name: momentum_12_1
+family: momentum
+rebalance: ME
+horizon: 21
+signal: {kind: momentum, params: {feature: mom_12_1}}
+portfolio: {method: decile_ls, gross: 1.0, max_pos: 0.02, neutral: dollar, n_deciles: 10}

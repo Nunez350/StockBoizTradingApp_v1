@@ -1,0 +1,7 @@
+name: spy_hold
+family: sanity
+universe: current
+rebalance: ME
+signal: {kind: benchmark}
+portfolio: {method: fixed, fixed_weights: {SPY: 1.0}, neutral: none, max_pos: 1.0, gross: 1.0}
+costs: {commission_per_share: 0.0, min_commission: 0.0, half_spread_bps: 0.0, impact_coef: 0.0, borrow_bps_annual: 0.0}

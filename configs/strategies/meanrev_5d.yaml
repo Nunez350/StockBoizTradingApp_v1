@@ -1,0 +1,6 @@
+name: meanrev_5d
+family: meanrev
+rebalance: W-FRI
+horizon: 5
+signal: {kind: meanrev, params: {feature: rev_5d}}
+portfolio: {method: rank_ls, gross: 1.0, max_pos: 0.02, neutral: dollar}

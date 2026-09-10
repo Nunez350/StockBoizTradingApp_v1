@@ -1,0 +1,5 @@
+name: random_ls
+family: sanity
+rebalance: W-FRI
+signal: {kind: random}
+portfolio: {method: rank_ls, gross: 1.0, max_pos: 0.02, neutral: dollar}
