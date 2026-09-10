@@ -34,6 +34,7 @@ class PipelineOutput:
     signal: pd.DataFrame
     weights: pd.DataFrame
     result: BacktestResult
+    overlay: object = None
 
 
 def git_sha(root: Path = Path(".")) -> str:
@@ -75,42 +76,48 @@ def build_overlay(cfg: StrategyConfig, panel: Panel):
 def run_pipeline(cfg: StrategyConfig, root: Path | None = None, panel: Panel | None = None,
                  features: dict[str, pd.DataFrame] | None = None, signal_override: pd.DataFrame | None = None,
                  cost_scale: float = 1.0, ml_predictions: pd.DataFrame | None = None,
-                 overlay=None) -> PipelineOutput:
+                 overlay=None, weights_override: pd.DataFrame | None = None) -> PipelineOutput:
+    """``weights_override`` skips signal/construction (cost curves: costs never change target weights)."""
     set_all_seeds(cfg.seed)
     root = Path(root or cfg.data.root)
     panel = panel if panel is not None else prepare_panel(cfg, root)
     if features is None:
         full = load_panel(root, cfg.data.snapshot)
         features = {k: v.reindex(index=panel.sessions, columns=panel.symbols) for k, v in load_or_build(root, full, snapshot=cfg.data.snapshot).items()}
-    if cfg.signal.kind == "ml" and signal_override is None and ml_predictions is None:
-        from quantlab.ml.train import get_or_train_predictions
+    if weights_override is not None:
+        signal = signal_override if signal_override is not None else weights_override
+        weights = weights_override
+    else:
+        if cfg.signal.kind == "ml" and signal_override is None and ml_predictions is None:
+            from quantlab.ml.train import get_or_train_predictions
 
-        ml_predictions = get_or_train_predictions(cfg, root, panel, features)
-    signal = signal_override if signal_override is not None else make_signal(cfg, panel, features, ml_predictions)
-    signal = signal.loc[signal.index >= pd.Timestamp(cfg.data.start)]
-    betas = None
-    if cfg.portfolio.neutral == "beta":
-        betas = features["beta_252"].reindex(signal.index)
-    bl_fn = None
-    if cfg.portfolio.method == "bl":
-        from quantlab.bayes.black_litterman import bl_weights_from_scores
-        from quantlab.stats.ic import forward_returns, ic_series
+            ml_predictions = get_or_train_predictions(cfg, root, panel, features)
+        signal = signal_override if signal_override is not None else make_signal(cfg, panel, features, ml_predictions)
+        signal = signal.loc[signal.index >= pd.Timestamp(cfg.data.start)]
+        betas = None
+        if cfg.portfolio.neutral == "beta":
+            betas = features["beta_252"].reindex(signal.index)
+        bl_fn = None
+        if cfg.portfolio.method == "bl":
+            from quantlab.bayes.black_litterman import bl_weights_from_scores
+            from quantlab.stats.ic import forward_returns, ic_series
 
-        rets = panel.adj_close.pct_change(fill_method=None)
-        ic_hist = ic_series(signal, forward_returns(panel, cfg.horizon, cfg.execution))
+            rets = panel.adj_close.pct_change(fill_method=None)
+            ic_hist = ic_series(signal, forward_returns(panel, cfg.horizon, cfg.execution))
 
-        def bl_fn(scores, t):
-            past = rets.loc[:t]
-            # trailing IC known at t: forward returns that resolved before t
-            done = ic_hist.loc[: panel.sessions[max(0, panel.sessions.get_loc(t) - cfg.horizon - 1)]].tail(52)
-            ic = float(done.mean()) if done.notna().sum() >= 10 else 0.02
-            return bl_weights_from_scores(scores, past, max(ic, 0.005), cfg.portfolio.gross, cfg.portfolio.max_pos,
-                                          horizon_days=cfg.horizon)
+            def bl_fn(scores, t):
+                past = rets.loc[:t]
+                # trailing IC known at t: forward returns that resolved before t
+                done = ic_hist.loc[: panel.sessions[max(0, panel.sessions.get_loc(t) - cfg.horizon - 1)]].tail(52)
+                ic = float(done.mean()) if done.notna().sum() >= 10 else 0.02
+                return bl_weights_from_scores(scores, past, max(ic, 0.005), cfg.portfolio.gross, cfg.portfolio.max_pos,
+                                              horizon_days=cfg.horizon)
 
-    weights = build_target_weights(signal, panel.tradable, cfg.portfolio, betas, bl_fn)
+        weights = build_target_weights(signal, panel.tradable, cfg.portfolio, betas, bl_fn)
+
     weights = weights.reindex(columns=panel.symbols, fill_value=0.0)
     if overlay is None and (cfg.overlay.vol_target or cfg.overlay.regime):
-        overlay = build_overlay(cfg, panel)
+        overlay = build_overlay(cfg, panel)  # expensive (rolling HMM/GARCH): callers reuse PipelineOutput.overlay
     sigma = features["rvol_20"] / np.sqrt(252) if "rvol_20" in features else None
     res = run_backtest(panel.slice(start=pd.Timestamp(cfg.data.start)), weights, CostModel(cfg.costs.scaled(cost_scale)),
                        overlay=overlay, execution=cfg.execution, initial_capital=cfg.initial_capital, sigma_daily=sigma)
@@ -121,7 +128,7 @@ def run_pipeline(cfg: StrategyConfig, root: Path | None = None, panel: Panel | N
     res.gross_returns = res.gross_returns.loc[first_live:]
     res.meta.update({"config_hash": cfg.hash(), "name": cfg.name, "family": cfg.family, "seed": cfg.seed,
                      "snapshot_id": panel.meta.get("snapshot_id"), "git_sha": git_sha(), "first_live": str(first_live.date())})
-    return PipelineOutput(cfg, panel, features, signal, weights, res)
+    return PipelineOutput(cfg, panel, features, signal, weights, res, overlay)
 
 
 def _fmt(summary: dict) -> str:

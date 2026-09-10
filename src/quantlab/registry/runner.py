@@ -81,8 +81,9 @@ def run_experiment(a) -> str:
     log(f"PSR {sh['psr_0']:.3f} DSR {sh['dsr']:.3f} (n_trials={tstats['n_trials']}) boot CI [{boot['sharpe']['lo']:.2f}, {boot['sharpe']['hi']:.2f}]")
 
     # --- robustness ---------------------------------------------------------
-    def rerun_cost(m):
-        return run_pipeline(cfg, root, panel=panel, features=out.features, signal_override=sig, cost_scale=m).result.returns
+    def rerun_cost(m):  # engine only: weights and overlay are reused, costs never change them
+        return run_pipeline(cfg, root, panel=panel, features=out.features, signal_override=sig, cost_scale=m,
+                            weights_override=out.weights, overlay=out.overlay).result.returns
 
     cost_tbl, breakeven = cost_sensitivity(rerun_cost, (0.0, 0.5, 1.0, 1.5, 2.0, 3.0) if not quick else (0.0, 1.0, 2.0))
     log(f"cost curve done; breakeven x{breakeven}")

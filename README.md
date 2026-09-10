@@ -99,7 +99,9 @@ Suggested cron (ET): `15 8 * * 1-5 quantlab live run` and `0 10 * * 1-5 quantlab
 | SPY buy-and-hold (sanity) | 0.65 | 0.65 | engine reproduces the index exactly |
 | random long-short (sanity) | 0.16 | -1.74 | costs dominate at 134% weekly turnover |
 | momentum 12-1, decile L/S, monthly | 0.00 | -0.05 | IC 0.001; 2009 momentum crash |
-| 5-day reversal, rank L/S, weekly | 0.68 | 0.20 | costs eat 70% of the edge |
+| 5-day reversal, rank L/S, weekly | 0.68 | 0.20 | costs eat 70% of the edge; PSR 0.82, DSR 0.81 (6 trials), bootstrap CI [-0.18, 0.58], breakeven at 1.4x costs |
+| 5-day reversal + GARCH vol target + HMM regime overlay | 0.66 | -0.04 | overlay lowers exposure but not turnover, so costs win |
+| 1-month reversal via Black-Litterman weights, monthly | 0.10 | -0.06 | IC 0.003: the 1-month signal has no power here |
 | LightGBM on 14 features, purged walk-forward, weekly | 0.53 | 0.03 | fold IC 0.014, 66% of folds > 0; shuffled-label IC -0.001 (t = -0.96) |
 | same model, 15-split CPCV (5 paths) | | 0.11-0.20 | mean 0.15, sd 0.04; trained on more data than walk-forward, so optimistic |
 
