@@ -1,0 +1,90 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>{{ name }} tearsheet</title>
+<style>
+ body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f9f9f7;color:#0b0b0b;margin:0;padding:24px 20px;max-width:1100px;margin:auto}
+ h1{font-size:20px;margin:0 0 4px} h2{font-size:14px;margin:26px 0 8px;color:#52514e;text-transform:uppercase;letter-spacing:.04em}
+ .meta{color:#52514e;font-size:12px} .tiles{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}
+ .tile{background:#fcfcfb;border:1px solid rgba(11,11,11,.10);border-radius:8px;padding:10px 14px;min-width:120px}
+ .tile .l{font-size:11px;color:#898781} .tile .v{font-size:20px;font-weight:600}
+ table{border-collapse:collapse;font-size:12px;background:#fcfcfb;font-variant-numeric:tabular-nums}
+ td,th{padding:4px 10px;border-bottom:1px solid #e1e0d9;text-align:right} th{color:#52514e;font-weight:600} td:first-child,th:first-child{text-align:left}
+ img{max-width:100%;background:#fcfcfb;border-radius:6px} .row{display:flex;flex-wrap:wrap;gap:12px} .row>div{flex:1 1 420px}
+ .warn{background:#fff6e5;border-left:3px solid #fab219;padding:8px 12px;font-size:12px;margin:8px 0}
+ .note{font-size:12px;color:#52514e}
+</style></head><body>
+<h1>{{ name }} <span class="meta">[{{ family }}]</span></h1>
+<div class="meta">run {{ run_id }} · snapshot {{ snapshot_id }} · git {{ git_sha }} · seed {{ seed }} · config {{ config_hash }} · universe {{ universe }} · rebalance {{ rebalance }} · horizon {{ horizon }} · counted trials in family: {{ trials.n_trials }} (effective {{ trials.n_effective }})</div>
+
+<div class="tiles">
+ <div class="tile"><div class="l">Net Sharpe</div><div class="v">{{ s.sharpe|num }}</div></div>
+ <div class="tile"><div class="l">Gross Sharpe</div><div class="v">{{ s.sharpe_gross|num }}</div></div>
+ <div class="tile"><div class="l">CAGR</div><div class="v">{{ s.cagr|pct }}</div></div>
+ <div class="tile"><div class="l">Ann. vol</div><div class="v">{{ s.ann_vol|pct }}</div></div>
+ <div class="tile"><div class="l">Max drawdown</div><div class="v">{{ s.max_dd|pct }}</div></div>
+ <div class="tile"><div class="l">Avg turnover / rebalance</div><div class="v">{{ s.avg_turnover|pct(0) }}</div></div>
+ <div class="tile"><div class="l">PSR (SR&gt;0)</div><div class="v">{{ sh.psr_0|pct }}</div></div>
+ <div class="tile"><div class="l">DSR ({{ trials.n_trials }} trials)</div><div class="v">{{ sh.dsr|pct }}</div></div>
+ {% if bayes %}<div class="tile"><div class="l">Bayes P(SR&gt;0)</div><div class="v">{{ bayes.p_sr_gt_0|pct }}</div></div>{% endif %}
+ {% if perm %}<div class="tile"><div class="l">Permutation p</div><div class="v">{{ perm.p_value|num(3) }}</div></div>{% endif %}
+</div>
+
+{% for w in warnings %}<div class="warn">{{ w }}</div>{% endfor %}
+
+<h2>Performance</h2>
+<img src="{{ figs.equity }}"><img src="{{ figs.drawdown }}"><img src="{{ figs.rolling_sharpe }}"><img src="{{ figs.exposure }}">
+<table><tr><th>window</th><th>obs</th><th>CAGR</th><th>vol</th><th>Sharpe</th><th>max DD</th><th>hit</th><th>skew</th><th>kurt</th></tr>
+<tr><td>{{ s.start }} → {{ s.end }}</td><td>{{ s.n_obs }}</td><td>{{ s.cagr|pct }}</td><td>{{ s.ann_vol|pct }}</td><td>{{ s.sharpe|num }}</td><td>{{ s.max_dd|pct }}</td><td>{{ s.hit_rate|pct }}</td><td>{{ s.skew|num }}</td><td>{{ s.kurt|num }}</td></tr></table>
+
+<h2>Sharpe inference</h2>
+<table><tr><th>statistic</th><th>value</th><th>note</th></tr>
+<tr><td>Annualized Sharpe ± SE (Lo)</td><td>{{ sh.sharpe_ann|num }} ± {{ sh.sharpe_se_ann|num }}</td><td>SE accounts for skew {{ sh.skew|num }} and kurtosis {{ sh.kurt|num }}</td></tr>
+<tr><td>PSR: P(true SR &gt; 0)</td><td>{{ sh.psr_0|pct }}</td><td></td></tr>
+<tr><td>Expected max SR of {{ trials.n_trials }} null trials (ann.)</td><td>{{ sh.sr0_ann|num }}</td><td>from registry: variance of trial SRs, {{ trials.n_effective }} effective after clustering</td></tr>
+<tr><td>DSR: P(true SR &gt; expected max)</td><td>{{ sh.dsr|pct }}</td><td>deflated for selection among registered trials</td></tr>
+<tr><td>Min track record (years) to reject SR≤0 at 5%</td><td>{{ sh.min_trl_years|num(1) }}</td><td></td></tr>
+<tr><td>Bootstrap 95% CI Sharpe</td><td>[{{ boot.sharpe.lo|num }}, {{ boot.sharpe.hi|num }}]</td><td>stationary bootstrap, mean block {{ boot.mean_block|num(0) }}, P(SR≤0) = {{ boot.sharpe.p_le_0|pct }}</td></tr>
+<tr><td>Bootstrap 95% CI CAGR</td><td>[{{ boot.cagr.lo|pct }}, {{ boot.cagr.hi|pct }}]</td><td></td></tr>
+<tr><td>Bootstrap 95% CI max drawdown</td><td>[{{ boot.max_dd.lo|pct }}, {{ boot.max_dd.hi|pct }}]</td><td>{{ boot.note }}</td></tr>
+{% if bayes %}<tr><td>Bayesian P(SR &gt; 0) / P(SR &gt; 0.5)</td><td>{{ bayes.p_sr_gt_0|pct }} / {{ bayes.p_sr_gt_0p5|pct }}</td><td>Student-t likelihood (ν posterior mean {{ bayes.nu_mean|num(1) }}), posterior SR mean {{ bayes.sr_mean|num }} [{{ bayes.sr_lo|num }}, {{ bayes.sr_hi|num }}]</td></tr>{% endif %}
+{% if perm %}<tr><td>Permutation test (within-date shuffle, {{ perm.n }} draws)</td><td>p = {{ perm.p_value|num(3) }}</td><td>null Sharpe mean {{ perm.null_mean|num }} sd {{ perm.null_sd|num }}</td></tr>{% endif %}
+</table>
+{% if bayes %}<img src="{{ figs.bayes }}">{% endif %}
+
+<h2>Signal quality</h2>
+<div class="row"><div><img src="{{ figs.ic }}"></div><div><img src="{{ figs.ic_decay }}"></div></div>
+<table><tr><th>IC statistic (horizon {{ horizon }})</th><th>value</th></tr>
+<tr><td>Mean rank IC</td><td>{{ ic.mean|num(4) }}</td></tr><tr><td>IC IR (mean/sd)</td><td>{{ ic.ir|num }}</td></tr>
+<tr><td>Newey-West t ({{ ic.lags }} lags)</td><td>{{ ic.t_nw|num }} (p = {{ ic.p_nw|num(3) }})</td></tr>
+<tr><td>Hit rate (IC &gt; 0)</td><td>{{ ic.hit|pct }}</td></tr><tr><td>Mean IC first / second half</td><td>{{ ic.mean_first_half|num(4) }} / {{ ic.mean_second_half|num(4) }}</td></tr></table>
+
+<div class="row"><div><img src="{{ figs.deciles }}"></div><div>
+<table><tr><th>Decile analysis</th><th>value</th></tr>
+<tr><td>D10 − D1 spread (ann. Sharpe)</td><td>{{ dec.spread_sharpe_ann|num }}</td></tr>
+<tr><td>Spread NW t / p</td><td>{{ dec.spread_t_nw|num }} / {{ dec.spread_p|num(3) }}</td></tr>
+<tr><td>Monotonicity (Spearman ρ, bootstrap p)</td><td>{{ dec.monotonicity_rho|num }} (p = {{ dec.monotonicity_p_boot|num(3) }})</td></tr></table>
+<table style="margin-top:10px"><tr><th>Fama-MacBeth</th><th>mean γ</th><th>NW t</th><th>p</th></tr>
+{% for k, v in fm.items() %}<tr><td>{{ k }}</td><td>{{ v.mean|num(5) }}</td><td>{{ v.t_nw|num }}</td><td>{{ v.p|num(3) }}</td></tr>{% endfor %}
+<tr><td colspan="4" class="note">controls standardized per date; mean cross-sectional R² {{ fm_r2|num(3) }}; {{ fm_n }} dates</td></tr></table>
+</div></div>
+
+<h2>Robustness</h2>
+<div class="row"><div><img src="{{ figs.cost }}"></div>{% if figs.param %}<div><img src="{{ figs.param }}"></div>{% endif %}{% if figs.offsets %}<div><img src="{{ figs.offsets }}"></div>{% endif %}</div>
+<table><tr><th>cost multiplier</th>{% for r in cost_rows %}<td>{{ r.multiplier|num(1) }}×</td>{% endfor %}</tr>
+<tr><th>net Sharpe</th>{% for r in cost_rows %}<td>{{ r.sharpe|num }}</td>{% endfor %}</tr>
+<tr><th>CAGR</th>{% for r in cost_rows %}<td>{{ r.cagr|pct }}</td>{% endfor %}</tr></table>
+<p class="note">Breakeven cost multiplier: {{ breakeven if breakeven is not none else 'n/a' }}. Base assumptions: {{ costs }}.</p>
+
+{% if regime is not none %}<h2>Regime-conditional performance</h2>
+<table><tr><th>regime</th><th>obs</th><th>share</th><th>ann. return</th><th>ann. vol</th><th>Sharpe</th><th>hit</th><th>max DD</th></tr>
+{% for name, r in regime.items() %}<tr><td>{{ name }}</td><td>{{ r.n }}</td><td>{{ r.share|pct(0) }}</td><td>{{ r.ann_ret|pct }}</td><td>{{ r.ann_vol|pct }}</td><td>{{ r.sharpe|num }}</td><td>{{ r.hit|pct }}</td><td>{{ r.max_dd|pct }}</td></tr>{% endfor %}</table>
+<p class="note">{{ regime_note }}</p>{% endif %}
+
+<h2>Survivorship check</h2>
+<table><tr><th>universe</th><th>net Sharpe</th><th>CAGR</th><th>max DD</th></tr>
+<tr><td>point-in-time membership (this run: {{ universe }})</td><td>{{ s.sharpe|num }}</td><td>{{ s.cagr|pct }}</td><td>{{ s.max_dd|pct }}</td></tr>
+{% if alt %}<tr><td>{{ alt.label }}</td><td>{{ alt.sharpe|num }}</td><td>{{ alt.cagr|pct }}</td><td>{{ alt.max_dd|pct }}</td></tr>{% endif %}</table>
+<p class="note">{{ coverage_note }}</p>
+
+{% if leak %}<h2>Lookahead canary</h2><p class="note">{{ leak }}</p>{% endif %}
+<p class="note">Generated {{ generated }}. All statistics computed on net returns after the cost model unless stated.</p>
+</body></html>
