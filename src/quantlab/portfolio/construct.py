@@ -43,7 +43,7 @@ def _dollar_neutral(w: pd.Series, gross: float) -> pd.Series:
 
 
 def scores_to_weights(scores: pd.Series, cfg: PortfolioConfig, betas: pd.Series | None = None,
-                      bl_fn=None) -> pd.Series:
+                      bl_fn=None, date=None) -> pd.Series:
     """One date. ``scores`` indexed by tradable symbols (NaN dropped)."""
     s = scores.dropna()
     s = s[np.isfinite(s)]
@@ -74,7 +74,7 @@ def scores_to_weights(scores: pd.Series, cfg: PortfolioConfig, betas: pd.Series 
     elif cfg.method == "bl":
         if bl_fn is None:
             raise ValueError("bl method needs bl_fn")
-        w = bl_fn(s)
+        w = bl_fn(s, date)
     else:  # pragma: no cover
         raise ValueError(cfg.method)
 
@@ -104,7 +104,7 @@ def build_target_weights(scores: pd.DataFrame, tradable: pd.DataFrame, cfg: Port
         ok = tradable.loc[t] if t in tradable.index else pd.Series(True, index=row.index)
         s = row.where(ok.reindex(row.index).fillna(False))
         b = betas.loc[t] if betas is not None and t in betas.index else None
-        rows[t] = scores_to_weights(s, cfg, b, bl_fn)
+        rows[t] = scores_to_weights(s, cfg, b, bl_fn, t)
     w = pd.DataFrame(rows).T.fillna(0.0)
     w.index.name = "date"
     return w

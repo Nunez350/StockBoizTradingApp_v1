@@ -91,7 +91,23 @@ def run_pipeline(cfg: StrategyConfig, root: Path | None = None, panel: Panel | N
     betas = None
     if cfg.portfolio.neutral == "beta":
         betas = features["beta_252"].reindex(signal.index)
-    weights = build_target_weights(signal, panel.tradable, cfg.portfolio, betas)
+    bl_fn = None
+    if cfg.portfolio.method == "bl":
+        from quantlab.bayes.black_litterman import bl_weights_from_scores
+        from quantlab.stats.ic import forward_returns, ic_series
+
+        rets = panel.adj_close.pct_change(fill_method=None)
+        ic_hist = ic_series(signal, forward_returns(panel, cfg.horizon, cfg.execution))
+
+        def bl_fn(scores, t):
+            past = rets.loc[:t]
+            # trailing IC known at t: forward returns that resolved before t
+            done = ic_hist.loc[: panel.sessions[max(0, panel.sessions.get_loc(t) - cfg.horizon - 1)]].tail(52)
+            ic = float(done.mean()) if done.notna().sum() >= 10 else 0.02
+            return bl_weights_from_scores(scores, past, max(ic, 0.005), cfg.portfolio.gross, cfg.portfolio.max_pos,
+                                          horizon_days=cfg.horizon)
+
+    weights = build_target_weights(signal, panel.tradable, cfg.portfolio, betas, bl_fn)
     weights = weights.reindex(columns=panel.symbols, fill_value=0.0)
     if overlay is None and (cfg.overlay.vol_target or cfg.overlay.regime):
         overlay = build_overlay(cfg, panel)

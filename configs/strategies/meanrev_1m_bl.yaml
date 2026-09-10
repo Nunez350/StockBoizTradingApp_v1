@@ -1,0 +1,6 @@
+name: meanrev_1m_bl
+family: meanrev
+rebalance: ME
+horizon: 21
+signal: {kind: meanrev, params: {feature: rev_1m}}
+portfolio: {method: bl, gross: 1.0, max_pos: 0.02, neutral: dollar}
