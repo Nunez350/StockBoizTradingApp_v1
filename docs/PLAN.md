@@ -107,7 +107,7 @@ Invariants (`tests/test_engine.py`): zero weights → zero return; SPY buy-and-h
 | Cost sensitivity curve + breakeven bps; parameter-stability heatmap; rebalance-offset dispersion | every grid cell logged as a trial |
 | Regime-conditional performance | labels must be filtered/lagged (same no-lookahead test) |
 
-Synthetic tests: plant `fwd_ret = ρ·signal + noise`, recover ρ via IC and FM within CI; PSR/DSR match Bailey & López de Prado (2014) worked numbers.
+Synthetic tests: plant `fwd_ret = ρ·signal + noise`, recover ρ via IC and FM within CI; PSR matches its Gaussian closed form; expected-max-SR matches a Monte Carlo of iid trials.
 
 ## 8. Bayesian components (answer to "bayesian?") — build in this order
 
@@ -156,7 +156,7 @@ Long (date, symbol) dataset with lagged features; label = h-day forward open-to-
 | M2 | Source chain, cache, adjustment, quality, snapshot | `quantlab data update --symbols SPY,AAPL,BRK.B` then `data check` → 0 critical; 2nd update → "0 fetched"; then full backfill |
 | M3 | Feature registry + price features | `pytest tests/test_no_lookahead.py` passes for every feature |
 | M4 | Constructor, cost model, engine, result | `spy_hold.yaml` reproduces SPY TR within 1e-6 at zero cost; `random.yaml` net Sharpe ≈ 0, negative after costs |
-| M5 | NW, IC, deciles, FM, PSR/DSR, bootstrap, CV splitters | synthetic tests recover planted ρ; DSR matches paper; purge test shows no overlap |
+| M5 | NW, IC, deciles, FM, PSR/DSR, bootstrap, CV splitters | synthetic tests recover planted ρ; PSR closed form + expected-max-SR Monte Carlo pass; purge test shows no overlap |
 | M6 | Registry, Experiment, tearsheet | `quantlab run configs/strategies/momentum_12_1.yaml` → tearsheet; registry shows `n_trials=1` |
 | M7 | Momentum + mean reversion with full rigor (cost curve, param grid, offset dispersion, PIT vs current) | both tearsheets; registry grows by exactly grid size; DSR uses that count |
 | M8 | ML dataset, purged walk-forward, CPCV, LightGBM, TorchMLP | per-fold IC + 15-path CPCV Sharpe; shuffled-label IC \|t\|<2; GPU log line |
