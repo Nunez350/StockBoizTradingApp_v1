@@ -100,6 +100,8 @@ Suggested cron (ET): `15 8 * * 1-5 quantlab live run` and `0 10 * * 1-5 quantlab
 | random long-short (sanity) | 0.16 | -1.74 | costs dominate at 134% weekly turnover |
 | momentum 12-1, decile L/S, monthly | 0.00 | -0.05 | IC 0.001; 2009 momentum crash |
 | 5-day reversal, rank L/S, weekly | 0.68 | 0.20 | costs eat 70% of the edge |
+| LightGBM on 14 features, purged walk-forward, weekly | 0.53 | 0.03 | fold IC 0.014, 66% of folds > 0; shuffled-label IC -0.001 (t = -0.96) |
+| same model, 15-split CPCV (5 paths) | | 0.11-0.20 | mean 0.15, sd 0.04; trained on more data than walk-forward, so optimistic |
 
 These are the honest numbers the framework was built to produce. See the tearsheets for the
 full inference (PSR, DSR, bootstrap CI, permutation p) before drawing conclusions.
