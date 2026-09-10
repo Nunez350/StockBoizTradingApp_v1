@@ -4,7 +4,7 @@ strategy_config: configs/strategies/meanrev_5d.yaml
 dry_run: true
 max_gross_notional: 150000.0
 max_position_pct: 0.05
-max_turnover_pct: 0.60
+max_turnover_pct: 1.20   # first-day build turns over the full gross; tighten after go-live
 max_orders: 300
 max_order_notional: 10000.0
 min_trade_notional: 200.0

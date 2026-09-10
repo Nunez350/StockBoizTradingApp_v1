@@ -19,8 +19,11 @@ from quantlab.data.panel import Panel
 
 
 def fit_hmm(X: np.ndarray, n_states: int = 2, seed: int = 0):
+    import logging
+
     from hmmlearn.hmm import GaussianHMM
 
+    logging.getLogger("hmmlearn").setLevel(logging.ERROR)  # 'Model is not converging' chatter on every refit
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         m = GaussianHMM(n_components=n_states, covariance_type="full", n_iter=200, random_state=seed, tol=1e-4)
