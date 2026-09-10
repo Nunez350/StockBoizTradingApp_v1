@@ -73,9 +73,10 @@ def run_experiment(a) -> str:
     # --- Sharpe inference: trials from the registry (this run counts as one more) --
     tstats = reg.trial_stats(cfg.family)
     kind = _sanity_kind(cfg)
-    n_trials = tstats["n_trials"] + (1 if kind in ("trial",) else 0)
+    is_new = kind == "trial" and cfg.hash() not in tstats.pop("hashes", set())
+    n_trials = tstats["n_trials"] + (1 if is_new else 0)
     sh = sharpe_report(res.returns, n_trials=max(1, n_trials), var_trials=tstats["var_trials"])
-    tstats = {**tstats, "n_trials": max(1, n_trials), "n_effective": max(1, tstats["n_effective"] + (1 if kind == "trial" else 0))}
+    tstats = {**tstats, "n_trials": max(1, n_trials), "n_effective": max(1, tstats["n_effective"] + (1 if is_new else 0))}
     boot = bootstrap_report(res.returns, n_boot=200 if quick else a.n_boot)
     log(f"PSR {sh['psr_0']:.3f} DSR {sh['dsr']:.3f} (n_trials={tstats['n_trials']}) boot CI [{boot['sharpe']['lo']:.2f}, {boot['sharpe']['hi']:.2f}]")
 

@@ -1,0 +1,15 @@
+# Paper-trading job configuration. dry_run stays true until you deliberately flip it.
+strategy_ref: momentum_12_1            # informational: which registered strategy this mirrors
+strategy_config: configs/strategies/meanrev_5d.yaml
+dry_run: true
+max_gross_notional: 50000.0
+max_position_pct: 0.05
+max_turnover_pct: 0.60
+max_orders: 300
+max_order_notional: 5000.0
+min_trade_notional: 200.0
+max_price_staleness_sessions: 2
+max_stale_fraction: 0.02
+kill_file: data/KILL
+state_db: data/live.sqlite
+report_dir: reports/live

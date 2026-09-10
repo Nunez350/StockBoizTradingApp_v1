@@ -112,7 +112,7 @@ class RunRegistry:
         srs = df["sharpe_pp"].dropna().to_numpy()
         var = float(np.var(srs, ddof=1)) if len(srs) > 1 else 0.0
         eff = effective_trials(self.load_returns(list(df["run_id"]))) if n > 1 else n
-        return {"n_trials": n, "var_trials": var, "n_effective": eff}
+        return {"n_trials": n, "var_trials": var, "n_effective": eff, "hashes": set(df["config_hash"])}
 
 
 def cli_registry(a) -> None:

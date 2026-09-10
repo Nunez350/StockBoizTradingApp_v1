@@ -1,0 +1,12 @@
+name: ml_mlp
+family: ml
+rebalance: W-FRI
+horizon: 5
+signal: {kind: ml}
+portfolio: {method: rank_ls, gross: 1.0, max_pos: 0.02, neutral: dollar}
+ml:
+  model: mlp
+  horizon: 5
+  train_min_years: 3.0
+  retrain_every: QE
+  params: {hidden: 64, dropout: 0.1, epochs: 15, lr: 0.001}

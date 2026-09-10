@@ -82,6 +82,10 @@ def run_pipeline(cfg: StrategyConfig, root: Path | None = None, panel: Panel | N
     if features is None:
         full = load_panel(root, cfg.data.snapshot)
         features = {k: v.reindex(index=panel.sessions, columns=panel.symbols) for k, v in load_or_build(root, full, snapshot=cfg.data.snapshot).items()}
+    if cfg.signal.kind == "ml" and signal_override is None and ml_predictions is None:
+        from quantlab.ml.train import get_or_train_predictions
+
+        ml_predictions = get_or_train_predictions(cfg, root, panel, features)
     signal = signal_override if signal_override is not None else make_signal(cfg, panel, features, ml_predictions)
     signal = signal.loc[signal.index >= pd.Timestamp(cfg.data.start)]
     betas = None

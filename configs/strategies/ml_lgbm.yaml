@@ -1,0 +1,15 @@
+name: ml_lgbm
+family: ml
+rebalance: W-FRI
+horizon: 5
+signal: {kind: ml}
+portfolio: {method: rank_ls, gross: 1.0, max_pos: 0.02, neutral: dollar}
+ml:
+  model: lgbm
+  features: []          # empty = every registered feature
+  horizon: 5
+  train_min_years: 3.0
+  retrain_every: QE
+  params: {n_estimators: 300, learning_rate: 0.03, num_leaves: 31, min_child_samples: 200}
+  cpcv_groups: 6
+  cpcv_test: 2

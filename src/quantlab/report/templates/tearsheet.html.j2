@@ -24,7 +24,7 @@
  <div class="tile"><div class="l">Avg turnover / rebalance</div><div class="v">{{ s.avg_turnover|pct(0) }}</div></div>
  <div class="tile"><div class="l">PSR (SR&gt;0)</div><div class="v">{{ sh.psr_0|pct }}</div></div>
  <div class="tile"><div class="l">DSR ({{ trials.n_trials }} trials)</div><div class="v">{{ sh.dsr|pct }}</div></div>
- {% if bayes %}<div class="tile"><div class="l">Bayes P(SR&gt;0)</div><div class="v">{{ bayes.p_sr_gt_0|pct }}</div></div>{% endif %}
+ {% if bayes %}<div class="tile"><div class="l">Bayes P(SR&gt;0)</div><div class="v">{{ bayes.p_sr_gt_0_normal|pct }}</div></div>{% endif %}
  {% if perm %}<div class="tile"><div class="l">Permutation p</div><div class="v">{{ perm.p_value|num(3) }}</div></div>{% endif %}
 </div>
 
@@ -45,7 +45,8 @@
 <tr><td>Bootstrap 95% CI Sharpe</td><td>[{{ boot.sharpe.lo|num }}, {{ boot.sharpe.hi|num }}]</td><td>stationary bootstrap, mean block {{ boot.mean_block|num(0) }}, P(SR≤0) = {{ boot.sharpe.p_le_0|pct }}</td></tr>
 <tr><td>Bootstrap 95% CI CAGR</td><td>[{{ boot.cagr.lo|pct }}, {{ boot.cagr.hi|pct }}]</td><td></td></tr>
 <tr><td>Bootstrap 95% CI max drawdown</td><td>[{{ boot.max_dd.lo|pct }}, {{ boot.max_dd.hi|pct }}]</td><td>{{ boot.note }}</td></tr>
-{% if bayes %}<tr><td>Bayesian P(SR &gt; 0) / P(SR &gt; 0.5)</td><td>{{ bayes.p_sr_gt_0|pct }} / {{ bayes.p_sr_gt_0p5|pct }}</td><td>Student-t likelihood (ν posterior mean {{ bayes.nu_mean|num(1) }}), posterior SR mean {{ bayes.sr_mean|num }} [{{ bayes.sr_lo|num }}, {{ bayes.sr_hi|num }}]. The t-location is a robust center; under skew it differs from the sample mean. Normal-likelihood P(SR&gt;0) = {{ bayes.p_sr_gt_0_normal|pct }}.</td></tr>{% endif %}
+{% if bayes %}<tr><td>Bayesian P(SR &gt; 0): normal likelihood</td><td>{{ bayes.p_sr_gt_0_normal|pct }}</td><td>conjugate Normal-Inverse-Gamma posterior on the mean return</td></tr>
+<tr><td>Bayesian P(SR &gt; 0) / P(SR &gt; 0.5): robust (Student-t)</td><td>{{ bayes.p_sr_gt_0|pct }} / {{ bayes.p_sr_gt_0p5|pct }}</td><td>Student-t likelihood (ν posterior mean {{ bayes.nu_mean|num(1) }}), posterior SR mean {{ bayes.sr_mean|num }} [{{ bayes.sr_lo|num }}, {{ bayes.sr_hi|num }}]. The t-location is a robust center; under skew it differs from the sample mean. Normal-likelihood P(SR&gt;0) = {{ bayes.p_sr_gt_0_normal|pct }}.</td></tr>{% endif %}
 {% if perm %}<tr><td>Permutation test (within-date shuffle, {{ perm.n }} draws)</td><td>p = {{ perm.p_value|num(3) }}</td><td>null Sharpe mean {{ perm.null_mean|num }} sd {{ perm.null_sd|num }}</td></tr>{% endif %}
 </table>
 {% if bayes %}<img src="{{ figs.bayes }}">{% endif %}
