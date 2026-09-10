@@ -1,0 +1,19 @@
+# Defaults merged under every strategy config.
+data:
+  root: data
+  snapshot: latest
+  start: "2005-01-01"
+  end: null
+  benchmark: SPY
+  min_price: 5.0
+  min_adv_usd: 5.0e6
+  sources: [alpaca, tiingo, yfinance]
+costs:
+  commission_per_share: 0.005
+  min_commission: 0.0
+  half_spread_bps: 2.5
+  impact_coef: 0.5
+  borrow_bps_annual: 50.0
+seed: 42
+execution: next_open
+initial_capital: 1000000.0

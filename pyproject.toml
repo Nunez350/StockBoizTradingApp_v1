@@ -1,0 +1,52 @@
+[project]
+name = "quantlab"
+version = "0.1.0"
+description = "S&P 500 cross-sectional research framework with rigorous statistics, backtesting, and Alpaca paper trading"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.0",
+    "pandas>=3.0",
+    "scipy>=1.14",
+    "scikit-learn>=1.5",
+    "pyarrow>=17",
+    "pydantic>=2.7",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0",
+    "requests>=2.32",
+    "lxml>=5.0",
+    "exchange-calendars>=4.8",
+    "alpaca-py>=0.40",
+    "yfinance>=0.2.50",
+    "lightgbm>=4.5",
+    "torch>=2.9",
+    "arch>=7.0",
+    "statsmodels>=0.14.4",
+    "hmmlearn>=0.3.3",
+    "numpyro>=0.18",
+    "jax>=0.5",
+    "matplotlib>=3.9",
+    "jinja2>=3.1",
+    "joblib>=1.4",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-xdist>=3.6", "hypothesis>=6.100", "ruff>=0.6"]
+
+[project.scripts]
+quantlab = "quantlab.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/quantlab"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = ["ignore::DeprecationWarning", "ignore::FutureWarning"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
