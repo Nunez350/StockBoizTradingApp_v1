@@ -99,6 +99,7 @@ def ic_decay_plot(decay: pd.DataFrame, path):
     ax.set_xlabel("horizon (sessions)")
     ax.axhline(0, color=AXIS, linewidth=1)
     ax.set_title("IC decay by holding horizon")
+    ax.grid(axis="y")
     _save(fig, path)
 
 
@@ -112,6 +113,7 @@ def decile_bars(decile_means: dict, path, periods_per_year: float):
     ax.axhline(0, color=AXIS, linewidth=1)
     ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0, decimals=0))
     ax.set_title("Annualized mean forward return by decile")
+    ax.grid(axis="y")
     _save(fig, path)
 
 
@@ -154,6 +156,7 @@ def histogram(samples: np.ndarray, path, title: str, vline: float | None = None,
     ax.set_xlabel(xlabel)
     ax.set_yticks([])
     ax.set_title(title)
+    ax.grid(axis="y")
     _save(fig, path)
 
 
@@ -174,4 +177,5 @@ def offsets_plot(table: pd.DataFrame, path):
     ax.axhline(0, color=AXIS, linewidth=1)
     ax.set_xlabel("rebalance offset (sessions)")
     ax.set_title("Net Sharpe by rebalance-day offset")
+    ax.grid(axis="y")
     _save(fig, path)
