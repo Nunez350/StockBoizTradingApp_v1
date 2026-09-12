@@ -117,5 +117,10 @@ Robustness on the 5-day reversal strategy (`reports/logs/robustness_meanrev.log`
 - Parameter grid (feature x max position, 6 cells, all registered as trials): 0.18-0.20; the position
   cap never binds with ~500 names.
 
+Hierarchical shrinkage of per-stock 5-day-reversal betas (last 5 years, `reports/bayes/hierarchical_rev5d_betas.csv`):
+unpooled |beta| averages 0.054, shrunk toward sector and global means it averages 0.021 (60% of the
+per-name "alpha" is noise). 15.6% of names keep P(beta > 0) > 0.9 (materials and semis lead: ALB, SMCI,
+MOS, STLD, ANET); 0.4% are confidently negative (ECHO, TSLA).
+
 These are the honest numbers the framework was built to produce. See the tearsheets for the
 full inference (PSR, DSR, bootstrap CI, permutation p) before drawing conclusions.
