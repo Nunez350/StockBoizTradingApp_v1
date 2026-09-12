@@ -33,6 +33,29 @@ def make_synthetic_panel(n_sym: int = 30, start="2019-01-01", end="2021-12-31", 
     mem[benchmark] = False
     fr["membership"] = mem
     fr["tradable"] = mem.copy()
+    # point-in-time style fundamentals: step functions that change on random "filing" dates
+    def stepwise(scale, positive=True):
+        base = np.abs(rs.normal(scale, scale * 0.3, k)) if positive else rs.normal(0, scale, k)
+        m = np.tile(base, (n, 1)).astype(float)
+        for j in range(k):
+            for f in sorted(rs.choice(n, 10, replace=False)):
+                m[f:, j] = m[f:, j] * (1 + rs.normal(0, 0.1)) if positive else m[f:, j] + rs.normal(0, scale)
+        return pd.DataFrame(m, index=sess, columns=syms)
+
+    fr["shares"] = stepwise(1e8)
+    fr["assets"] = stepwise(5e9)
+    fr["equity"] = stepwise(2e9)
+    fr["ni_ttm"] = stepwise(2e8, positive=False)
+    fr["ocf_ttm"] = stepwise(3e8, positive=False)
+    fr["gp_ttm"] = stepwise(1e9)
+    fr["rev_ttm"] = stepwise(4e9)
+    fr["eps_q_yoy"] = stepwise(0.1, positive=False)
+    since = pd.DataFrame(np.tile((np.arange(n) % 63)[:, None], (1, k)).astype(float), index=sess, columns=syms)
+    fr["days_since_earn"] = since
+    fr["earn_soon"] = (since >= 58).astype(float)
+    fr["pead_2d"] = stepwise(0.03, positive=False)
+    fr["market"] = pd.DataFrame({"vix": 15 + 5 * np.abs(rs.normal(size=n)).cumsum() / np.sqrt(np.arange(1, n + 1)),
+                                 "vix3m": 17 + 4 * np.abs(rs.normal(size=n)).cumsum() / np.sqrt(np.arange(1, n + 1))}, index=sess)
     return Panel(fr, {s: "Synthetic" for s in syms}, {"benchmark": benchmark, "start": start, "end": end})
 
 

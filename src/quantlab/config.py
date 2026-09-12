@@ -96,6 +96,17 @@ class MLConfig(_Strict):
     cpcv_test: int = 2
 
 
+class MetaConfig(_Strict):
+    """Meta-labeling: a classifier predicts whether each primary trade covers its round-trip cost."""
+    enabled: bool = True
+    features: list[str] = Field(default_factory=list)  # empty = a sensible default set
+    threshold: float = 0.5
+    mode: Literal["filter", "scale"] = "filter"
+    train_min_years: float = 3.0
+    retrain_every: str = "QE"
+    params: dict[str, Any] = Field(default_factory=dict)
+
+
 class StrategyConfig(_Strict):
     name: str
     family: str = "default"
@@ -106,6 +117,7 @@ class StrategyConfig(_Strict):
     portfolio: PortfolioConfig = Field(default_factory=PortfolioConfig)
     overlay: OverlayConfig = Field(default_factory=OverlayConfig)
     ml: MLConfig | None = None
+    meta: MetaConfig | None = None
     data: DataConfig = Field(default_factory=DataConfig)
     costs: CostConfig = Field(default_factory=CostConfig)
     seed: int = 42

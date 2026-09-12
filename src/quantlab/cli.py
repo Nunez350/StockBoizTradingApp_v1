@@ -112,6 +112,13 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("--workers", type=int, default=4)
     c.set_defaults(fn=_cmd_data)
 
+    c = sub.add_parser("edgar", help="SEC EDGAR fundamentals + earnings dates")
+    c.add_argument("action", choices=["fetch", "map"])
+    c.add_argument("--root", default="data")
+    c.add_argument("--workers", type=int, default=4)
+    c.add_argument("--refresh", action="store_true")
+    c.set_defaults(fn=lambda a: __import__("quantlab.data.edgar", fromlist=["cli_edgar"]).cli_edgar(a))
+
     c = sub.add_parser("features", help="build the feature panel")
     c.add_argument("action", choices=["build", "list"])
     c.add_argument("--root", default="data")
@@ -150,7 +157,7 @@ def build_parser() -> argparse.ArgumentParser:
     c.set_defaults(fn=_cmd_stats)
 
     c = sub.add_parser("ml", help="train ML factor models with purged walk-forward / CPCV")
-    c.add_argument("action", choices=["train", "cpcv", "shuffle-test"])
+    c.add_argument("action", choices=["train", "cpcv", "shuffle-test", "meta-train"])
     c.add_argument("config")
     c.add_argument("--root", default=None)
     c.set_defaults(fn=_cmd_ml)

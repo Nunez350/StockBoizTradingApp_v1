@@ -1,0 +1,13 @@
+name: ml_lgbm_rich
+family: ml
+rebalance: W-FRI
+horizon: 5
+signal: {kind: ml}
+portfolio: {method: rank_ls, gross: 1.0, max_pos: 0.02, neutral: dollar}
+ml:
+  model: lgbm
+  features: []          # every registered feature: price/volume + fundamentals + earnings timing + VIX
+  horizon: 5
+  train_min_years: 3.0
+  retrain_every: QE
+  params: {n_estimators: 300, learning_rate: 0.03, num_leaves: 31, min_child_samples: 200}

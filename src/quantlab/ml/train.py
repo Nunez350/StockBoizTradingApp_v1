@@ -102,8 +102,10 @@ def cli_ml(a) -> None:
     from quantlab.registry.runs import RunRegistry
 
     cfg = load_config(a.config)
-    if cfg.ml is None:
+    if cfg.ml is None and a.action != "meta-train":
         raise SystemExit("config has no `ml:` section")
+    if a.action == "meta-train" and cfg.meta is None:
+        raise SystemExit("config has no `meta:` section")
     root = Path(a.root or cfg.data.root)
     panel = prepare_panel(cfg, root)
     full = load_panel(root, cfg.data.snapshot)
@@ -136,6 +138,26 @@ def cli_ml(a) -> None:
         print(paths.to_string(index=False))
         print(f"CPCV OOS Sharpe: mean {paths['sharpe'].mean():.2f} sd {paths['sharpe'].std():.2f} min {paths['sharpe'].min():.2f} "
               f"P(path Sharpe<0) {(paths['sharpe'] < 0).mean():.0%}")
+    elif a.action == "meta-train":
+        from quantlab.ml.meta import apply_meta, meta_cache, train_meta
+        from quantlab.stats.sharpe import sharpe
+
+        base = run_pipeline(cfg.model_copy(update={"meta": None}), root, panel=panel, features=features)
+        P, folds, imp = train_meta(cfg, panel, features, base.signal, base.weights)
+        P.to_parquet(meta_cache(root, cfg))
+        print(folds.to_string(index=False))
+        print(f"mean base rate {folds['base_rate'].mean():.3f} -> precision@{cfg.meta.threshold} {folds['precision_at_thr'].mean():.3f}; "
+              f"kept {folds['kept_frac'].mean():.0%}; rank corr {folds['rank_corr'].mean():.3f}")
+        print("meta feature importance:"); print(imp.round(1).to_string())
+        w2 = apply_meta(base.weights, P, cfg.meta.mode, cfg.meta.threshold)
+        r0 = base.result
+        out2 = run_pipeline(cfg, root, panel=panel, features=features, signal_override=base.signal, weights_override=w2)
+        s0, s2 = r0.summary(), out2.result.summary()
+        print(f"primary: net sharpe {s0['sharpe']:.2f} gross {s0['sharpe_gross']:.2f} turnover {s0['avg_turnover']:.0%} gross exp {s0['avg_gross_exposure']:.2f}")
+        print(f"meta   : net sharpe {s2['sharpe']:.2f} gross {s2['sharpe_gross']:.2f} turnover {s2['avg_turnover']:.0%} gross exp {s2['avg_gross_exposure']:.2f}")
+        reg.log_trial(reg.new_run_id(cfg.name + "_meta"), cfg.name, cfg.family, "ml_hp", cfg.hash(), cfg.to_json(),
+                      panel.meta.get("snapshot_id"), out2.result.meta.get("git_sha", "nogit"), cfg.seed, out2.result.returns,
+                      {"precision": float(folds["precision_at_thr"].mean()), "sharpe": s2["sharpe"]})
     elif a.action == "shuffle-test":
         _, folds, _ = walk_forward_predictions(cfg, panel, features, shuffle_seed=cfg.seed)
         ics = folds["ic_mean"].dropna()

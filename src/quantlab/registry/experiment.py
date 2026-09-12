@@ -116,6 +116,11 @@ def run_pipeline(cfg: StrategyConfig, root: Path | None = None, panel: Panel | N
         weights = build_target_weights(signal, panel.tradable, cfg.portfolio, betas, bl_fn)
 
     weights = weights.reindex(columns=panel.symbols, fill_value=0.0)
+    if cfg.meta is not None and cfg.meta.enabled and weights_override is None:
+        from quantlab.ml.meta import apply_meta, get_or_train_meta
+
+        P = get_or_train_meta(cfg, root, panel, features, signal, weights)
+        weights = apply_meta(weights, P, cfg.meta.mode, cfg.meta.threshold)
     if overlay is None and (cfg.overlay.vol_target or cfg.overlay.regime):
         overlay = build_overlay(cfg, panel)  # expensive (rolling HMM/GARCH): callers reuse PipelineOutput.overlay
     sigma = features["rvol_20"] / np.sqrt(252) if "rvol_20" in features else None

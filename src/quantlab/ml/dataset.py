@@ -35,9 +35,18 @@ def build_dataset(panel: Panel, features: dict[str, pd.DataFrame], names: list[s
     sess = panel.sessions
     fwd = forward_returns(panel, horizon, execution)
     y_wide = cs_zscore(mask(fwd, panel.tradable)).loc[dates]
+    from quantlab.features.fundamental import TIME_SERIES
+
     cols = {}
     for n in names:
-        f = cs_rank(mask(features[n].reindex(index=sess, columns=panel.symbols), panel.tradable)).loc[dates]
+        raw = features[n].reindex(index=sess, columns=panel.symbols)
+        if n in TIME_SERIES:  # market-wide: identical across symbols, so scale over time (causal expanding z-score)
+            v = raw.iloc[:, 0]
+            z = (v - v.expanding(min_periods=250).mean()) / v.expanding(min_periods=250).std()
+            f = pd.DataFrame(np.tile(z.to_numpy()[:, None], (1, raw.shape[1])), index=sess, columns=raw.columns)
+            f = mask(f, panel.tradable).loc[dates]
+        else:
+            f = cs_rank(mask(raw, panel.tradable)).loc[dates]
         cols[n] = f.stack(future_stack=True)
     X = pd.DataFrame(cols)
     X.index.names = ["date", "symbol"]

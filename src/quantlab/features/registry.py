@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pandas as pd
 
+import quantlab.features.fundamental  # noqa: F401  (registers features)
 import quantlab.features.price  # noqa: F401  (registers features)
 from quantlab.data.panel import Panel, snapshot_dir
 from quantlab.features.base import FEATURES, compute
