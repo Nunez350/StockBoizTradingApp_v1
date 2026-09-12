@@ -84,6 +84,12 @@ def _cmd_live(a):
     cli_live(a)
 
 
+def _cmd_api(a):
+    from quantlab.api.app import cli_api
+
+    cli_api(a)
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="quantlab")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -168,6 +174,18 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("--dry-run", action="store_true")
     c.add_argument("--live", action="store_true", help="actually submit orders (overrides config dry_run)")
     c.set_defaults(fn=_cmd_live)
+
+    c = sub.add_parser("api", help="serve the StockBoiz web UI + JSON API")
+    c.add_argument("action", choices=["serve"])
+    c.add_argument("--host", default="127.0.0.1")
+    c.add_argument("--port", type=int, default=8000)
+    c.add_argument("--root", default="data")
+    c.add_argument("--reports", default="reports")
+    c.add_argument("--live-config", default="configs/paper.yaml")
+    c.add_argument("--strategies", default="configs/strategies")
+    c.add_argument("--web-dist", default="web/dist", help="built front end (npm run build in web/)")
+    c.add_argument("--snapshot", default="latest")
+    c.set_defaults(fn=_cmd_api)
     return p
 
 

@@ -1,7 +1,16 @@
-# quantlab
+# StockBoiz v3 (quantlab)
 
-S&P 500 cross-sectional research framework with rigorous statistics, an honest backtester,
-and an Alpaca paper-trading job. Built from the plan in `docs/PLAN.md`.
+A web app that suggests buy and sell equity trades, and shows the statistics that say how far to
+trust them. The backend is **quantlab**: an S&P 500 cross-sectional research framework with
+rigorous statistics, an honest backtester, and an Alpaca paper-trading job, built from the plan in
+`docs/PLAN.md`. The front end is a small React app under `web/`.
+
+**Lineage.** StockBoiz v1 (this repository's `master`, 2019-2021) and
+[v2](https://github.com/Nunez350/StockBoizTradingApp_v2) were a Spring Boot symbol lookup over MySQL
+plus a React/Redux shell; the suggestion logic was never written. v3 keeps the name and the pages,
+replaces the Java backend with the Python pipeline below, and generates the suggestions from the
+paper-trading job. None of the v1/v2 code is carried forward; the `v3` branch records the v1
+history as an ancestor so `master` can fast-forward to it.
 
 The point of this code base is not a "winning" strategy. It is a pipeline in which every claim
 about a strategy is backed by a test that guards against the standard ways backtests lie:
@@ -12,7 +21,7 @@ lookahead, survivorship, multiple testing, cost underestimation, and regime luck
 ```bash
 uv sync --extra dev                 # creates .venv with every dependency
 cp .env.example .env                # add ALPACA_API_KEY / ALPACA_SECRET_KEY (paper), optional TIINGO_TOKEN
-uv run pytest -q                    # 68 tests: calendar, adjustment, engine invariants, no-lookahead, stats, CV, HMM, Bayes, safety
+uv run pytest -q                    # calendar, adjustment, engine invariants, no-lookahead, stats, CV, HMM, Bayes, safety, web API
 ```
 
 ## Data
@@ -99,6 +108,28 @@ uv run quantlab ml meta-train configs/strategies/meanrev_5d_meta.yaml
 - **Meta-labeling** (`ml/meta.py`): the reversal strategy proposes trades; a LightGBM classifier trained
   with purged walk-forward predicts whether each trade covers its round-trip cost. Low-confidence trades
   are dropped (or weights scaled), and the book is re-neutralized without ever scaling up.
+
+## Web UI and API
+
+```bash
+cd web && npm install && npm run build && cd ..   # once; or `npm run dev` for hot reload on :5173
+uv run quantlab api serve                          # http://127.0.0.1:8000  (UI + /api/* + /reports/*)
+```
+
+The API (`src/quantlab/api/app.py`, FastAPI) is read-only over files the CLI already writes:
+
+| endpoint | source |
+|---|---|
+| `/api/health` | curated snapshot meta, session range, kill switch |
+| `/api/suggestions[?date=]` | `reports/live/<date>/` orders, targets, safety verdict, reconciliation |
+| `/api/stocks?q=` | point-in-time universe plus current-constituent names and sectors |
+| `/api/stocks/{symbol}` | price history from the snapshot, latest cached feature values |
+| `/api/runs`, `/api/runs/{id}` | the run registry (`data/registry.sqlite`) |
+| `/api/runs/{id}/tearsheet`, `/reports/...` | tearsheets and everything else under `reports/` |
+| `/api/strategies` | `configs/strategies/*.yaml` |
+
+Pages: Home, Suggestions (order book with buy/sell, target weights, safety-abort banner), Stocks
+(search, Plotly chart, feature table), Runs (registry with tearsheet links), Contact.
 
 ## Paper trading
 
