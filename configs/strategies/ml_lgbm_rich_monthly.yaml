@@ -1,0 +1,13 @@
+name: ml_lgbm_rich_monthly
+family: ml
+rebalance: ME
+horizon: 21
+signal: {kind: ml}
+portfolio: {method: rank_ls, gross: 1.0, max_pos: 0.02, neutral: dollar}
+ml:
+  model: lgbm
+  features: []          # all features; fundamentals should matter more at a 1-month horizon
+  horizon: 21
+  train_min_years: 3.0
+  retrain_every: QE
+  params: {n_estimators: 300, learning_rate: 0.03, num_leaves: 15, min_child_samples: 100}

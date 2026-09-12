@@ -77,6 +77,29 @@ sensitivity with breakeven; regime-conditional table; survivorship comparison.
 - `changepoint.py`: Bayesian online changepoint detection; `P(run length <= 10)` is the live alert.
 - `black_litterman.py`: reverse-optimized prior with Ledoit-Wolf covariance, signal-implied views.
 
+## Richer features (SEC EDGAR) and meta-labeling
+
+```bash
+uv run quantlab edgar fetch                                  # companyfacts + filings per CIK, cached under data/edgar
+uv run quantlab data snapshot                                # attaches point-in-time fundamentals, earnings dates, VIX
+uv run quantlab ml train configs/strategies/ml_lgbm_rich.yaml
+uv run quantlab ml meta-train configs/strategies/meanrev_5d_meta.yaml
+```
+
+- Fundamentals come from SEC XBRL with their **filing** dates, so a value is only visible from the day it
+  was filed; the first-reported value is kept so restatements never leak backward; trailing-12-month flows
+  derive fiscal Q4 from the annual total. Coverage starts in 2009 (XBRL mandate) and only names with a CIK
+  have data (637 of 877), so these features carry their own survivorship caveat.
+- Earnings-event timing comes from 8-K item 2.02 filings: days since the last release, an estimate of the
+  next one (last + 91 days), and the two-day price reaction.
+- Market stress: VIX level, 5-day change, and VIX/VIX3M term structure, z-scored over time (never
+  cross-sectionally, since they are identical across names on a date).
+- Not available for free with history: analyst revisions and per-stock implied volatility. Yahoo only
+  exposes current snapshots, so they are not backtestable and are deliberately absent.
+- **Meta-labeling** (`ml/meta.py`): the reversal strategy proposes trades; a LightGBM classifier trained
+  with purged walk-forward predicts whether each trade covers its round-trip cost. Low-confidence trades
+  are dropped (or weights scaled), and the book is re-neutralized without ever scaling up.
+
 ## Paper trading
 
 ```bash
@@ -103,6 +126,8 @@ Suggested cron (ET): `15 8 * * 1-5 quantlab live run` and `0 10 * * 1-5 quantlab
 | 5-day reversal + GARCH vol target + HMM regime overlay | 0.66 | -0.04 | overlay lowers exposure but not turnover, so costs win |
 | 1-month reversal via Black-Litterman weights, monthly | 0.10 | -0.06 | IC 0.003: the 1-month signal has no power here |
 | LightGBM on 14 features, purged walk-forward, weekly | 0.53 | 0.03 | fold IC 0.014, 66% of folds > 0; shuffled-label IC -0.001 (t = -0.96) |
+| LightGBM on 31 features (+ fundamentals, earnings timing, VIX), weekly | 0.37 | 0.00 | fold IC 0.020, 70% > 0, shuffle clean; top splits are VIX and earnings timing, i.e. it fits time regimes, not stocks |
+| 5-day reversal + meta-labeling filter (P >= 0.50), weekly | 0.79 | 0.49 | keeps ~20% of trades: turnover 131% -> 21%, max DD -28% -> -6%, but gross exposure 14% so CAGR < 1% unlevered; 5 threshold cells registered as trials |
 | same model, 15-split CPCV (5 paths) | | 0.11-0.20 | mean 0.15, sd 0.04; trained on more data than walk-forward, so optimistic |
 
 Robustness on the 5-day reversal strategy (`reports/logs/robustness_meanrev.log`):
