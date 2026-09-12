@@ -77,14 +77,14 @@ def cpcv_paths(cfg: StrategyConfig, root: Path, panel: Panel, features: dict, lo
     return pd.DataFrame(rows)
 
 
-def predictions_cache(root: Path, cfg: StrategyConfig) -> Path:
+def predictions_cache(root: Path, cfg: StrategyConfig, snapshot_id: str | None = None) -> Path:
     d = root / "ml"
     d.mkdir(parents=True, exist_ok=True)
-    return d / f"pred_{cfg.hash()}.parquet"
+    return d / f"pred_{cfg.hash()}_{snapshot_id or 'nosnap'}.parquet"
 
 
 def get_or_train_predictions(cfg: StrategyConfig, root: Path, panel: Panel, features: dict, log=print) -> pd.DataFrame:
-    p = predictions_cache(root, cfg)
+    p = predictions_cache(root, cfg, panel.meta.get("snapshot_id"))
     if p.exists():
         return pd.read_parquet(p)
     wide, folds, imps = walk_forward_predictions(cfg, panel, features, log=log)
@@ -113,7 +113,7 @@ def cli_ml(a) -> None:
     reg = RunRegistry(root)
     if a.action == "train":
         wide, folds, imps = walk_forward_predictions(cfg, panel, features)
-        wide.to_parquet(predictions_cache(root, cfg))
+        wide.to_parquet(predictions_cache(root, cfg, panel.meta.get("snapshot_id")))
         print(folds.to_string(index=False))
         ics = folds["ic_mean"]
         print(f"mean fold IC {ics.mean():.4f}, share of folds with IC>0: {(ics > 0).mean():.0%}")
@@ -144,7 +144,7 @@ def cli_ml(a) -> None:
 
         base = run_pipeline(cfg.model_copy(update={"meta": None}), root, panel=panel, features=features)
         P, folds, imp = train_meta(cfg, panel, features, base.signal, base.weights)
-        P.to_parquet(meta_cache(root, cfg))
+        P.to_parquet(meta_cache(root, cfg, panel.meta.get("snapshot_id")))
         print(folds.to_string(index=False))
         print(f"mean base rate {folds['base_rate'].mean():.3f} -> precision@{cfg.meta.threshold} {folds['precision_at_thr'].mean():.3f}; "
               f"kept {folds['kept_frac'].mean():.0%}; rank corr {folds['rank_corr'].mean():.3f}")

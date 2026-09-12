@@ -128,14 +128,16 @@ def apply_meta(weights: pd.DataFrame, P: pd.DataFrame, mode: str, threshold: flo
     return w.fillna(0.0)
 
 
-def meta_cache(root: Path, cfg: StrategyConfig) -> Path:
+def meta_cache(root: Path, cfg: StrategyConfig, snapshot_id: str | None = None) -> Path:
+    """Keyed on everything EXCEPT threshold/mode (those only change how P is applied) and on the snapshot."""
     d = root / "ml"
     d.mkdir(parents=True, exist_ok=True)
-    return d / f"meta_{cfg.hash()}.parquet"
+    key = cfg.model_copy(update={"meta": cfg.meta.model_copy(update={"threshold": 0.0, "mode": "filter"})}).hash()
+    return d / f"meta_{key}_{snapshot_id or 'nosnap'}.parquet"
 
 
 def get_or_train_meta(cfg, root: Path, panel, features, signal, weights, log=print) -> pd.DataFrame:
-    p = meta_cache(root, cfg)
+    p = meta_cache(root, cfg, panel.meta.get("snapshot_id"))
     if p.exists():
         return pd.read_parquet(p)
     P, folds, imp = train_meta(cfg, panel, features, signal, weights, log=log)
